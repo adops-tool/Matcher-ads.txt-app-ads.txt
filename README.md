@@ -36,7 +36,7 @@ A privacy-first, browser-native validation utility for auditing `ads.txt` and `a
   - Supports tab-delimited and multi-space-delimited data copied from spreadsheets.
 - Intelligent partner matching:
   - Cleans partner names (including parenthetical suffix removal).
-  - Escapes regex special characters for safe lookup.
+  - Matches partner names literally, without treating special characters as regex syntax.
   - Counts occurrences in the target authorization document.
 - Source metadata visibility for partner rows:
   - Partner type (`oRTB`, etc.).
@@ -48,14 +48,18 @@ A privacy-first, browser-native validation utility for auditing `ads.txt` and `a
 - Line-level exactness checks:
   - Normalizes comma-separated fields.
   - Ignores whitespace differences.
-  - Ignores inline comments after `#`.
+  - Ignores inline comments after `#` and skips comment-only lines.
+  - Preserves empty fields so malformed rows do not match different records.
   - Performs case-insensitive matching.
 - High-signal result views with status color coding (`FOUND` / `MISSING`).
-- Auto-persisted workspace via `localStorage`, including text areas and toggle state.
+- Auto-persisted workspace via `localStorage`, including text areas and toggle state, with an option to clear the workspace.
+- Result summaries, accessible tab navigation, and feedback when storage is unavailable.
 - Zero backend dependencies and no server-side data transfer.
 
 > [!IMPORTANT]
-> Since all content is processed locally, sensitive deal IDs or partner metadata never leave the browser session unless you explicitly share them.
+> Pasted content is processed locally and stored in the browser when storage is available. Clear the workspace after using a shared browser profile.
+>
+> The optional GitHub Actions AI workflow is separate from the app: it sends eligible repository diffs and event metadata to an external model and can publish its response in an issue or PR comment. Enable it only for repositories whose contents may be shared in this way; treat its output as untrusted and review it before acting on it.
 
 ## Tech Stack & Architecture
 
@@ -64,15 +68,18 @@ A privacy-first, browser-native validation utility for auditing `ads.txt` and `a
 - `HTML5` for semantic structure and single-page UI layout.
 - `CSS3` for responsive-ish two-column workspace and result table styling.
 - Vanilla `JavaScript (ES6+)` for parser/matcher logic and UI state transitions.
-- Browser `localStorage` API for session persistence.
+- Browser `localStorage` API for persistence across sessions.
 
 ### Project Structure
 
 ```text
 Matcher-ads.txt-app-ads.txt/
-├── .github/
-│   └── FUNDING.yml
-├── index.html
+├── .github/                 # Workflows and contribution templates
+├── index.html               # Browser application
+├── tests/                   # Application and automation tests
+├── trigger action/          # GitHub analysis automation
+├── package.json             # Test-only JavaScript dependency
+├── requirements.txt         # Automation dependencies
 ├── LICENSE
 └── README.md
 ```
@@ -91,9 +98,9 @@ Matcher-ads.txt-app-ads.txt/
    - Detects spreadsheet-like tabular data and structured block data.
    - Improves interoperability with AdOps workflows and copied partner exports.
 
-4. **Regex-safe name matching**
-   - Partner names are escaped before search regex creation.
-   - Prevents accidental regex interpretation from special characters.
+4. **Literal name matching**
+   - Partner names are compared as case-insensitive literal strings.
+   - Repeated names reuse their occurrence count within each check.
 
 5. **Client-side persistence over remote state**
    - `localStorage` keeps recent input without introducing auth/session complexity.
@@ -104,7 +111,7 @@ flowchart TD
     C[User pastes partner list OR check lines] --> B
     B --> D{Validation Mode}
     D -->|Platform Check| E[parsePartnersData]
-    E --> F[Name normalization and regex-safe matching]
+    E --> F[Name normalization and literal matching]
     F --> G[Result sorting and status tagging]
     G --> H[Platform table rendering]
     D -->|Line Check| I[normalizeLine for source and probes]
@@ -115,7 +122,7 @@ flowchart TD
 ```
 
 > [!TIP]
-> For repeat audits, keep the browser tab open and iterate on partner input only. The app persists prior content, reducing repetitive paste/setup time.
+> For repeat audits, iterate on partner input only. The app persists prior content when browser storage is available.
 
 ## Getting Started
 
@@ -123,7 +130,7 @@ flowchart TD
 
 - Any modern browser (`Chrome`, `Edge`, `Firefox`, `Safari`).
 - Optional local static server for predictable local-origin behavior.
-- Optional `Node.js >= 18` if you want to run linting helpers via `npx`.
+- Optional `Node.js >= 18` and Python 3 to run the automated tests.
 
 ### Installation
 
@@ -149,25 +156,15 @@ python3 -m http.server 8080
 
 ## Testing
 
-> [!NOTE]
-> The repository currently does not ship with a formal automated unit/integration test suite.
-
-Recommended validation workflow:
+Run the automated tests with Node.js 18 or later and Python 3. The npm dependency is used only for testing; the application has no runtime dependencies:
 
 ```bash
-# Static page smoke check
-python3 -m http.server 8080
+npm ci --ignore-scripts
+npm test
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-```bash
-# Optional HTML linting
-npx --yes htmlhint index.html
-```
-
-```bash
-# Optional formatting check (if Prettier is preferred locally)
-npx --yes prettier --check README.md index.html
-```
+The tests cover partner parsing, literal matching, line normalization, interface behavior, and the automation script. They also run in the pull request workflow.
 
 Manual functional checks:
 
@@ -264,7 +261,9 @@ This project does not require `.env` files, runtime flags, or external configura
 
 ### Operational Notes
 
-- Clearing persisted state:
+Use **Clear workspace** to remove the inputs and saved state from this browser. Storage may be unavailable in restricted browsing contexts or when the quota is exceeded; the app displays a warning and continues to work without persistence. On shared devices, remember that saved data remains accessible to other users of the same browser profile.
+
+Alternatively, clear the keys in the browser console:
 
 ```js
 localStorage.removeItem("adsInput");

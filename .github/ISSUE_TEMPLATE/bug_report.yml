@@ -15,15 +15,15 @@ body:
       options:
         - label: I have checked existing open and closed issues for duplicates.
           required: true
-        - label: I am using the latest version of the action/script.
+        - label: I am using the latest version of the application.
           required: true
 
   - type: textarea
     id: environment
     attributes:
       label: Environment Details
-      description: OS version, Python version, and execution context (local vs GitHub Actions).
-      placeholder: e.g., Ubuntu-latest (GitHub Actions), Python 3.11
+      description: Browser and OS version, and how the application was opened.
+      placeholder: e.g., Firefox on Windows, opened from a local file
     validations:
       required: true
 
@@ -33,9 +33,9 @@ body:
       label: Steps to Reproduce
       description: Provide a clear, step-by-step algorithm to trigger the bug.
       placeholder: |
-        1. Push commit with the following payload...
-        2. Action triggers process_event.py...
-        3. Fails with error...
+        1. Enter the following sample data...
+        2. Select the check mode and run the check...
+        3. Observe the result...
     validations:
       required: true
 
@@ -50,8 +50,8 @@ body:
   - type: textarea
     id: actual-behavior
     attributes:
-      label: Actual Behavior / Traceback
-      description: What actually occurred? Paste stack traces or logs here.
+      label: Actual Behavior
+      description: What actually occurred? Include any relevant error messages.
       render: shell
     validations:
       required: true
