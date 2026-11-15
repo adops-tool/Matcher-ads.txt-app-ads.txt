@@ -17,43 +17,23 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.head_ref }}
+          persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: |
-          if [ ! -f package.json ]; then
-            echo "No package.json found. Skipping npm install."
-            exit 0
-          fi
-          if [ -f package-lock.json ]; then
-            echo "package-lock.json found. Running fast install (npm ci)..."
-            npm ci
-          else
-            echo "package-lock.json NOT found. Generating it (npm install)..."
-            npm install --no-audit --no-fund
-          fi
+      - name: Install test dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Run project lint script when available
-        run: |
-          if [ -f package.json ]; then
-            npm run lint --if-present
-          else
-            echo "No package.json found. Skipping lint."
-          fi
+      - name: Run tests
+        run: npm test
 
-      - name: Validate JavaScript syntax
-        run: |
-          if [ -d api ]; then
-            while IFS= read -r -d '' file; do
-              node --check "$file"
-            done < <(find api -type f -name '*.js' -print0)
-          else
-            echo "No api/ directory found. Skipping JavaScript syntax validation."
-          fi
+      - name: Run automation tests
+        run: python -m unittest discover -s tests -p 'test_*.py'
+
+      - name: Check Python syntax
+        run: python -m py_compile "trigger action/trigger_action.py"

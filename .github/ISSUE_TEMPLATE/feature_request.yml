@@ -1,5 +1,5 @@
 name: Feature Request
-description: Suggest an enhancement or a new feature for the LLM pipeline.
+description: Suggest an enhancement to the ads.txt checker.
 title: "feat: [Short description of the feature]"
 labels: ["enhancement"]
 body:
@@ -22,7 +22,7 @@ body:
     attributes:
       label: Proposed Solution & Use Cases
       description: Describe your ideal solution and real-world scenarios where this feature would be beneficial.
-      placeholder: It would be great if the action could automatically...
+      placeholder: It would be useful if the checker could...
     validations:
       required: true
 
